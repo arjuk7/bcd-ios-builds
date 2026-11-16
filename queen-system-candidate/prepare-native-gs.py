@@ -7,11 +7,14 @@ shutil.copytree(r/'dxmt',o/'dxmt',ignore=shutil.ignore_patterns('.git'))
 (o/'research').mkdir();shutil.copytree(r/'research/remote-metal',o/'research/remote-metal')
 (o/'toolchains').symlink_to(r/'toolchains',target_is_directory=True)
 (o/'build/dxmt-ios').mkdir(); (o/'build/dxmt-ios/shader-headers').symlink_to(r/'build/dxmt-ios/shader-headers',target_is_directory=True)
-wf=(r/'.github/workflows/build-ipa.yml').read_text()
+retained='2833ed85d945bb6623611200b558057f36f60f20'
+# App-only source intentionally omits the full native workflow; recover its
+# exact overlay ordering from the retained donor commit, not the current tree.
+wf=subprocess.check_output(['git','show',retained+':.github/workflows/build-ipa.yml'],cwd=r).decode('utf-8')
 chain=re.findall(r'python3 (tools/patch-(?:dxmt|airconv|winemetal)-[\w.-]+\.py)',wf)
 assert chain
 retained='2833ed85d945bb6623611200b558057f36f60f20'
-for path in ['.github/workflows/build-ipa.yml']+chain:
+for path in chain:
  original=subprocess.check_output(['git','show',retained+':'+path],cwd=r)
  assert (r/path).read_bytes()==original, ('Retained native overlay drift',path)
 for script in chain:subprocess.run([sys.executable,str(r/script)],cwd=o,check=True)
