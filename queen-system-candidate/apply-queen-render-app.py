@@ -42,8 +42,7 @@ b='''            /* Per-session Queen renderer only. Normal DLL farms are restor
                         }
                         dprintf(STDERR_FILENO, "[queen-submit] Queen renderer selection attempted; activation is confirmed by PE counters\\n");
                     } else {
-                        unsetenv("BCD_QUEEN_RENDER_BATCH")
-            unsetenv("BCD_QUEEN_NATIVE_RHI");
+                        unsetenv("BCD_QUEEN_RENDER_BATCH");
                         dprintf(STDERR_FILENO, "[queen-submit] candidate absent; existing renderer unchanged\\n");
                     }
                 }
