@@ -1,0 +1,49 @@
+name: BCD661 Queen five-entry native alias candidate
+'on':
+  push:
+    branches: [queen-alias-661]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: bcd661-queen-alias
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.repository == 'arjuk7/bcd-ios-builds' && contains(github.event.head_commit.message, '[queen-alias-661-build]')
+    runs-on: macos-15-intel
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONUNBUFFERED: '1'
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Targeted emulator component and app-only relink
+        shell: bash
+        run: bash queen-alias-candidate/run-build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BCD-661-Queen-Alias-existing-update
+          path: |
+            source/build-out/BCD-661-Queen-Alias-update.ipa
+            source/build-out/ipa.sha256
+            source/build-out/existing-update/package-receipt.json
+            source/build-out/queen-alias-package-receipt.json
+            source/build-out/queen-alias/receipt.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BCD-661-Queen-Alias-build-logs
+          path: |
+            source/build-out/*.log
+            source/build-out/*.json
+            source/build-out/queen-alias/*.json
+            source/build-out/queen-native/*.json
+            source/FEX/build-arm64ec*.log
+          if-no-files-found: ignore
+
