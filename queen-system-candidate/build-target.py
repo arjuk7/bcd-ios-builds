@@ -62,14 +62,16 @@ source_before=(root/'FEX/Source/Windows/ARM64EC/Module.cpp').read_bytes()
 subprocess.run([sys.executable,str(cfg/'apply-native-nav.py'),str(root/'FEX')],check=True)
 subprocess.run([sys.executable,str(cfg/'apply-guest-leaf-route.py'),str(root/'FEX')],check=True)
 subprocess.run([sys.executable,str(cfg/'apply-guest-leaf-install.py'),str(root/'FEX')],check=True)
+subprocess.run([sys.executable,str(cfg/'apply-copy-sampling.py'),str(root/'FEX')],check=True)
 subprocess.run(['cmake','--build',str(B),'--target','arm64ecfex','-j2'],check=True)
 after=objects();changed=[n for n in before.keys()|after.keys() if before.get(n)!=after.get(n)]
-expected_objects={'Module.cpp','BranchOps.cpp','Dispatcher.cpp'}
-assert len(changed)==3 and {Path(n).stem for n in changed}==expected_objects,('Unexpected object changes',changed)
-assert sha(assembly.read_bytes())==assembly_before_sha256,'Unexpected Module.S change'
+expected_objects={'Module.cpp','BranchOps.cpp','Dispatcher.cpp','Module.S','Core.cpp'}
+assert len(changed)==5 and {Path(n).stem for n in changed}==expected_objects,('Unexpected object changes',changed)
+assert assembly.read_text().count('  QUEEN_COPY_SAMPLE')==1
+assert sha(assembly.read_bytes())!=assembly_before_sha256,'Sampled diagnostic writer missing'
 candidate=out/'xtajit64-queen-nav.dll';candidate.write_bytes(dll.read_bytes())
 c=pe.Pe(str(candidate))
-assert set(c.exports())==set(a.exports())|{'QueenNativeLedgeFilter','QueenNativeBoundShaderState'},'Unexpected export delta'
+assert set(c.exports())==set(a.exports())|{'QueenNativeLedgeFilter','QueenNativeBoundShaderState','QueenNativeGraphicsCommit'},'Unexpected export delta'
 subprocess.run([sys.executable,str(cfg/'check-native-nav.py'),str(candidate),str(out/'helper-abi.json')],check=True)
 toolchain=Path(os.environ['MINGW'])
 for filename,argv in [
@@ -77,7 +79,7 @@ for filename,argv in [
     ('candidate-pe-metadata.txt',[str(toolchain/'llvm-readobj'),'--coff-load-config','--coff-exports','--sections','--section-data',str(candidate)]),
 ]:
     (out/filename).write_text(run(argv))
-(out/'assembly-preservation.json').write_text(json.dumps({'Module.S_before':assembly_before_sha256,'Module.S_after':sha(assembly.read_bytes()),'preserved':True,'scope':'guest leaf routing changes BranchOps/Dispatcher only; Module.S unchanged'},indent=2))
+(out/'assembly-preservation.json').write_text(json.dumps({'Module.S_before':assembly_before_sha256,'Module.S_after':sha(assembly.read_bytes()),'preserved':False,'scope':'existing sampled slow path only; no common-call target comparisons, stack/ABI layout changes or copy replacement'},indent=2))
 assert sha(ship.read_bytes())==sha(stock) and sha(avx.read_bytes())==avxsha
 receipt={'baseline_sha256':sha(baseline),'donor_sha256':sha(stock),'baseline_mapped_sections_identical':report['raw_identical'],'baseline_timestamp_normalized_identical':True,'candidate_sha256':sha(candidate.read_bytes()),'changed_objects':changed,'source_before_sha256':sha(source_before),'source_after_sha256':sha((root/'FEX/Source/Windows/ARM64EC/Module.cpp').read_bytes()),'stock_preserved':True,'device_tested':False}
 (out/'receipt.json').write_text(json.dumps(receipt,indent=2))

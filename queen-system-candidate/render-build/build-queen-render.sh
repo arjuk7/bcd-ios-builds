@@ -111,7 +111,7 @@ fi
 
 
 # No inherited BCD patch scripts: pinned source already contains its own fixes.
-cp -R "$D/src/d3d11" "$D/src/d3d10" "$D/src/dxmt" "$OUT/tree/src/"
+cp -R "$D/src/d3d11" "$D/src/d3d10" "$D/src/dxmt" "$D/src/airconv" "$OUT/tree/src/"
 git -C "$OUT/tree" init -q
 # DXMT's meson.build: compiler_args, the project defines, buildtype=release
 # (-O3, b_ndebug=if-release -> NDEBUG), C++20. -fmacro-prefix-map maps the
@@ -145,7 +145,7 @@ compile_one() {  # compile_one <root> <source> <object> <flag set>
         util)   inc=("${INC_UTIL[@]}") ;;
         parser) inc=("${INC_PARSER[@]}" -Wno-extern-c-compat -Wno-unknown-pragmas) ;;
         dxmt)   inc=(-I"$root/src/dxmt" "${INC_DXMT[@]}") ;;
-        d3d11)  inc=(-I"$root/src/d3d11" -I"$G" -I"$root/src/dxmt" -I"$D/src/airconv" -I"$D/src/winemetal" -I"$U" "${INC_BASE[@]}" -I"$OUT/gen") ;;
+        d3d11)  inc=(-I"$root/src/airconv" -I"$root/src/d3d11" -I"$G" -I"$root/src/dxmt" -I"$D/src/airconv" -I"$D/src/winemetal" -I"$U" "${INC_BASE[@]}" -I"$OUT/gen") ;;
     esac
     case "$src" in
         *.c) "$CC" "${CFLAGS[@]}" -fmacro-prefix-map="$root/=" -fmacro-prefix-map="$D/=" "${inc[@]}" -c "$src" -o "$obj" ;;
@@ -242,7 +242,7 @@ cp "$OUT/jobs" "$OUT/baseline-jobs.tsv"
 python3 - "$QUEEN_RENDER_PATCH" <<'PY'
 import subprocess,sys
 rows=subprocess.check_output(['git','apply','--numstat',sys.argv[1]],text=True).splitlines()
-allowed={'src/d3d11/d3d11_context_imm.cpp','src/d3d11/d3d11_context_impl.cpp','src/d3d11/d3d11_context_def.cpp'}
+allowed={'src/dxmt/dxmt_dynamic.cpp','src/d3d11/d3d11_shader.cpp','src/d3d11/d3d11_pipeline_gs.cpp','src/d3d11/d3d11_geometry_payload.hpp','src/airconv/airconv_public.h','src/airconv/dxbc_converter_gs.cpp'}
 paths={row.split('\t')[2] for row in rows}
 assert paths and paths<=allowed,('Review dependency coverage before broadening patch',paths)
 PY
@@ -252,16 +252,19 @@ git -C "$OUT/tree" apply "$QUEEN_RENDER_PATCH"
 PATCHED_OBJ=()
 for s in "${D3D11_SRC[@]}"; do
     case "$s" in
-        d3d11/d3d11_context_imm|d3d11/d3d11_context_def)
+        d3d11/d3d11_shader|d3d11/d3d11_pipeline_gs)
             o="$OUT/obj/$(obj_name "$s").o"
             job "$OUT/tree" "$OUT/tree/src/$s.cpp" "$o" d3d11 ;;
         *) o="$OUT/plain/obj/$(obj_name "$s").o" ;;
     esac
     PATCHED_OBJ+=("$o")
 done
+job "$OUT/tree" "$OUT/tree/src/dxmt/dxmt_dynamic.cpp" "$OUT/obj/dxmt_dxmt_dynamic.o" dxmt
 run_jobs
 cp "$OUT/jobs" "$OUT/candidate-jobs.tsv"
-link_dll "$OUT/d3d11-queen-render.dll" "$OUT/plain/libdxmt.a" "${PATCHED_OBJ[@]}"
+cp "$OUT/plain/libdxmt.a" "$OUT/libdxmt-queen.a"
+"$AR" rcs "$OUT/libdxmt-queen.a" "$OUT/obj/dxmt_dxmt_dynamic.o"
+link_dll "$OUT/d3d11-queen-render.dll" "$OUT/libdxmt-queen.a" "${PATCHED_OBJ[@]}"
 
 # Preserve the real PE ABI and exact import library/symbol surface, not just DLL names.
 for variant in stock baseline candidate; do
@@ -311,7 +314,7 @@ baseline_imports=imports('baseline');candidate_imports=imports('candidate')
 assert baseline_imports==candidate_imports,'Candidate import delta needs exact symbol/DLL review; see import-comparison.json'
 report={'baseline_sha256':sha(p/'plain/d3d11.dll'),'candidate_sha256':sha(p/'d3d11-queen-render.dll'),
         'stock_baseline_symbol_layout_identical':(p/'stock.nm').read_text()==(p/'baseline.nm').read_text(),
-        'incremental_units':['d3d11_context_imm.cpp','d3d11_context_def.cpp'],
+        'incremental_units':['dxmt_dynamic.cpp','d3d11_shader.cpp','d3d11_pipeline_gs.cpp'],
         'exports_imports_verified':True,'pe_machine':hex(next(iter(machines))),'arm64ec_code_ranges_verified':True,'device_tested':False,'not_packaged':True}
 (p/'receipt.json').write_text(json.dumps(report,indent=2))
 print(json.dumps(report,indent=2))

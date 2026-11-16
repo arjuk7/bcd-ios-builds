@@ -21,12 +21,14 @@ for key,h in expected.items():
 shutil.copyfile(newdll,app/'arm64ec-windows/xtajit64-queen-nav.dll')
 renderer=root/'build-out/queen-render/d3d11-queen-render.dll'
 rr=json.loads((root/'build-out/queen-render/receipt.json').read_text());assert sha(renderer)==rr['candidate_sha256'] and rr['exports_imports_verified']
-shutil.copyfile(renderer,app/'arm64ec-windows/d3d11-queen.dll')
-p=app/'Info.plist';info=plistlib.loads(p.read_bytes());assert info['CFBundleVersion']=='665'
+shutil.copyfile(renderer,app/'arm64ec-windows/d3d11-queen-v2.dll')
+gr=json.loads((root/'build-out/queen-gs-native/native-gs-receipt.json').read_text());assert gr['changed_members']==['dxbc_converter_gs.o']
+assert sha(root/'app/Madeira/libdxmt_combined.a')==gr['archive_sha256']
+p=app/'Info.plist';info=plistlib.loads(p.read_bytes());assert info['CFBundleVersion']=='666'
 info['BCDQueenNativeNav']=True
-info['BCDValidationStatus']='QUEEN_GUEST_LEAF_CANDIDATE_USER_TEST'
+info['BCDValidationStatus']='QUEEN_RENDER_ARCHITECTURE_CANDIDATE_USER_TEST'
 p.write_bytes(plistlib.dumps(info,fmt=plistlib.FMT_BINARY,sort_keys=False))
-(root/'build-out/queen-nav-package-receipt.json').write_text(json.dumps({'baseline660_runtime_files_verified':len(verified),'signature_metadata_exceptions':sorted(exceptions),'added_runtime':'arm64ec-windows/xtajit64-queen-nav.dll','candidate':receipt,'renderer':rr,'added_renderer':'arm64ec-windows/d3d11-queen.dll','guest_leaf_contracts':['TlsGetValue','GetCurrentThreadId'],'native_api_bodies_unchanged':True,'device_tested':False},indent=2))
+(root/'build-out/queen-nav-package-receipt.json').write_text(json.dumps({'baseline660_runtime_files_verified':len(verified),'signature_metadata_exceptions':sorted(exceptions),'added_runtime':'arm64ec-windows/xtajit64-queen-nav.dll','candidate':receipt,'renderer':rr,'native_gs':gr,'native_graphics_stage_family':True,'old_batching_enabled':False,'added_renderer':'arm64ec-windows/d3d11-queen-v2.dll','guest_leaf_contracts':['TlsGetValue','GetCurrentThreadId'],'native_api_bodies_unchanged':True,'copy_size_sampler':'existing 1/64 sampled exit only; no copy replacement','device_tested':False},indent=2))
 spec=importlib.util.spec_from_file_location('signer',root/'tools/ota-variants.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);m.fakesign(str(app))
 
 
