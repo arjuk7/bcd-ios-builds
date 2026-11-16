@@ -79,7 +79,7 @@ for filename,argv in [
     ('candidate-pe-metadata.txt',[str(toolchain/'llvm-readobj'),'--coff-load-config','--coff-exports','--sections','--section-data',str(candidate)]),
 ]:
     (out/filename).write_text(run(argv))
-(out/'assembly-preservation.json').write_text(json.dumps({'Module.S_before':assembly_before_sha256,'Module.S_after':sha(assembly.read_bytes()),'preserved':False,'scope':'existing sampled slow path only; no common-call target comparisons, stack/ABI layout changes or copy replacement'},indent=2))
+(out/'assembly-preservation.json').write_text(json.dumps({'Module.S_before':assembly_before_sha256,'Module.S_after':sha(assembly.read_bytes()),'preserved':False,'scope':'sampled slow path plus exact uint32 NtDllRedirectionLUTSize load-width correction; no common-call target comparisons, stack/ABI layout changes or copy replacement'},indent=2))
 assert sha(ship.read_bytes())==sha(stock) and sha(avx.read_bytes())==avxsha
 receipt={'baseline_sha256':sha(baseline),'donor_sha256':sha(stock),'baseline_mapped_sections_identical':report['raw_identical'],'baseline_timestamp_normalized_identical':True,'candidate_sha256':sha(candidate.read_bytes()),'changed_objects':changed,'source_before_sha256':sha(source_before),'source_after_sha256':sha((root/'FEX/Source/Windows/ARM64EC/Module.cpp').read_bytes()),'stock_preserved':True,'device_tested':False}
 (out/'receipt.json').write_text(json.dumps(receipt,indent=2))

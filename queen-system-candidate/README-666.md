@@ -9,3 +9,5 @@ Batching staysOFF. Queen renderer selection uses separateBCD_QUEEN_RENDER_V2 and
 Checks: source/runtime contract reviews,60stage+49boundedwhole+4mixed/UAVhost differentialcases;108allocator lifetimecases;62shippedVS declaration extentchecks. Build adds actualARM64EC/nativecompiler compile and export/FFS/member receipts. No device performance/visual validation yet, no60fps claim. Actual liveGS pairing still needs log confirmation.
 
 Copy histogram samples are estimates,not exact counts/cost; new diagnostic overhead unmeasured. WholeGPUcommand intervals remain dependency-inclusive,not shader occupancy. No unsafe pooled buffers or guessed copy threshold.
+
+First link exposed a pre-existing CheckCall bug: uint32_t NtDllRedirectionLUTSize loaded as64bits. Corrected toLDR w17, preserving zero-extended size and eliminating adjacent-global overread; no blind alignment padding.

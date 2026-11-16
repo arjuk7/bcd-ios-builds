@@ -50,6 +50,8 @@ jobs:
             source/build-out/queen-render/*.txt
             source/build-out/queen-render/*.raw
             source/FEX/build-arm64ec/Source/Windows/ARM64EC/CMakeFiles/arm64ecfex.dir/Module.cpp.obj
+            source/FEX/build-arm64ec/Source/Windows/ARM64EC/CMakeFiles/arm64ecfex.dir/Module.S.obj
+            source/FEX/build-arm64ec/FEXCore/Source/CMakeFiles/FEXCore_object.dir/Interface/Core/Core.cpp.obj
             source/build-out/queen-native/*.json
             source/build-out/queen-gs-native/*.json
             source/build-out/queen-gs-native-source/source-receipt.json

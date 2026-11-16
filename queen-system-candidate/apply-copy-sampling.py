@@ -13,7 +13,13 @@ start=s.index('ExitFunctionECJit:');end=s.index('.global ExitFunctionEC\n',start
 body=s[start:end];anchor='  str x9, [x17, x23, lsl #3]'
 assert body.count(anchor)==1
 body=body.replace(anchor,anchor+'\n  QUEEN_COPY_SAMPLE')
-s=s[:start]+body+s[end:];p.write_text(s)
+s=s[:start]+body+s[end:]
+# Existing uint32_t size had an erroneous 64-bit scaled load. New globals
+# exposed its natural 4-byte alignment; use exact type width, not padding.
+size_load='  ldr x17, [x17, #:lo12:NtDllRedirectionLUTSize]'
+assert s.count(size_load)==1
+s=s.replace(size_load,'  ldr w17, [x17, #:lo12:NtDllRedirectionLUTSize]')
+p.write_text(s)
 
 p=root/'FEXCore/Source/Interface/Core/Core.cpp';s=p.read_text()
 declaration='''#if defined(FEX_IOS_HOST) && defined(ARCHITECTURE_arm64ec)
