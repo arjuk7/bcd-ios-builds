@@ -13,7 +13,6 @@ retained='2833ed85d945bb6623611200b558057f36f60f20'
 wf=subprocess.check_output(['git','show',retained+':.github/workflows/build-ipa.yml'],cwd=r).decode('utf-8')
 chain=re.findall(r'python3 (tools/patch-(?:dxmt|airconv|winemetal)-[\w.-]+\.py)',wf)
 assert chain
-retained='2833ed85d945bb6623611200b558057f36f60f20'
 for path in chain:
  original=subprocess.check_output(['git','show',retained+':'+path],cwd=r)
  assert (r/path).read_bytes()==original, ('Retained native overlay drift',path)
