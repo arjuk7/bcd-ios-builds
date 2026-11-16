@@ -8,9 +8,9 @@ p=folder/'Module.cpp';s=p.read_text()
 anchor='NTSTATUS ProcessInit() {'
 assert s.count(anchor)==1
 s=s.replace(anchor,'#ifdef FEX_IOS_HOST\n#include "QueenNativeNav.h"\n#endif\n\n'+anchor)
-end='  return STATUS_SUCCESS;\n}\n\nvoid ProcessTerm('
+end='    std::this_thread::sleep_for(std::chrono::seconds(StartupSleep()));\n  }\n\n  return STATUS_SUCCESS;'
 assert s.count(end)==1
-s=s.replace(end,'#ifdef FEX_IOS_HOST\n  InstallQueenNativeNav(MainModule);\n#endif\n\n'+end)
+s=s.replace(end,end.replace('  return STATUS_SUCCESS;','#ifdef FEX_IOS_HOST\n  InstallQueenNativeNav(MainModule);\n#endif\n\n  return STATUS_SUCCESS;'))
 for name in ['QueenNativeNav.h','QueenNativeNavKernel.h','QueenNativeNavFingerprint.h']:
     dest=folder/name
     assert not dest.exists(),dest
@@ -20,3 +20,4 @@ p=folder/'libarm64ecfex.def';s=p.read_text()
 assert 'QueenNativeLedgeFilter' not in s
 p.write_text(s+'\n  QueenNativeLedgeFilter\n')
 print('Queen native ledge-filter startup hook installed; no Module.S/game-file changes')
+
