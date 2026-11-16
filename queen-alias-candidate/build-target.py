@@ -3,7 +3,7 @@
 Never replaces stock files. Fail closed if retained baseline does not reproduce.
 Run from reconstructed source root; argument is candidate files directory.
 """
-import hashlib,importlib.util,json,os,subprocess,sys
+import hashlib,importlib.util,json,os,subprocess,sys,struct
 from pathlib import Path
 root=Path.cwd(); cfg=Path(sys.argv[1]).resolve(); out=root/'build-out/queen-alias';out.mkdir(parents=True,exist_ok=False)
 sha=lambda b:hashlib.sha256(b).hexdigest()
@@ -30,7 +30,25 @@ assert a.exports()==b.exports(),'Baseline exports/RVAs differ; stop, do not waiv
 # stricter than upstream warning-only fingerprinting: no drift gets shipped.
 def sections(img):
     return {name:(va,vs,sha(img.d[raw:raw+min(vs,rs)])) for name,va,vs,raw,rs,ch in img.secs if not name.startswith('.debug') and name!='.buildid'}
-assert sections(a)==sections(b),'Baseline mapped-section bytes/layout differ from donor; stop, no candidate'
+# Exclude only PE-defined timestamp fields; do not mistake build time for code drift.
+def normalized_sections(img):
+    data=bytearray(img.d)
+    for off in img.timestamp_offsets(): data[off:off+4]=b'\\0'*4
+    if img.dirs[0][0]:
+        off=img.off(img.dirs[0][0])+4 # IMAGE_EXPORT_DIRECTORY.TimeDateStamp
+        data[off:off+4]=b'\\0'*4
+    return {name:(va,vs,sha(data[raw:raw+min(vs,rs)])) for name,va,vs,raw,rs,ch in img.secs if not name.startswith('.debug') and name!='.buildid'}
+diffs=[]
+for sa,sb in zip(a.secs,b.secs):
+    na,va,vs,ra,rsa,cha=sa; nb,vb,vsb,rb,rsb,chb=sb
+    da=a.d[ra:ra+min(vs,rsa)];db=b.d[rb:rb+min(vsb,rsb)]
+    changes=[i for i in range(min(len(da),len(db))) if da[i]!=db[i]]
+    diffs.append({'name':na,'donor_layout':list(sa),'rebuilt_layout':list(sb),'different_bytes':len(changes),'length_delta':len(db)-len(da),'first_differences':[{'rva':hex(va+i),'donor':da[max(0,i-8):i+24].hex(),'rebuilt':db[max(0,i-8):i+24].hex()} for i in changes[:16]]})
+report={'raw_identical':sections(a)==sections(b),'timestamp_normalized_identical':normalized_sections(a)==normalized_sections(b),'sections':diffs}
+(out/'baseline-comparison.json').write_text(json.dumps(report,indent=2))
+print(json.dumps(report,indent=2))
+assert report['timestamp_normalized_identical'],'Baseline has differences beyond PE timestamps; see baseline-comparison.json and captured DLLs'
+
 assert sha(ship.read_bytes())==sha(stock) and sha(avx.read_bytes())==avxsha
 objects=lambda:{str(p.relative_to(B)):sha(p.read_bytes()) for p in B.rglob('*') if p.is_file() and p.suffix in ('.o','.obj')}
 before=objects()
@@ -43,7 +61,7 @@ candidate=out/'xtajit64-queen-alias.dll';candidate.write_bytes(dll.read_bytes())
 c=pe.Pe(str(candidate))
 assert set(c.exports())==set(a.exports()),'Export set changed'
 assert sha(ship.read_bytes())==sha(stock) and sha(avx.read_bytes())==avxsha
-receipt={'baseline_sha256':sha(baseline),'donor_sha256':sha(stock),'baseline_mapped_sections_identical':True,'candidate_sha256':sha(candidate.read_bytes()),'changed_objects':changed,'source_before_sha256':sha(source_before),'source_after_sha256':sha((root/'FEX/Source/Windows/ARM64EC/Module.S').read_bytes()),'stock_preserved':True,'device_tested':False}
+receipt={'baseline_sha256':sha(baseline),'donor_sha256':sha(stock),'baseline_mapped_sections_identical':report['raw_identical'],'baseline_timestamp_normalized_identical':True,'candidate_sha256':sha(candidate.read_bytes()),'changed_objects':changed,'source_before_sha256':sha(source_before),'source_after_sha256':sha((root/'FEX/Source/Windows/ARM64EC/Module.S').read_bytes()),'stock_preserved':True,'device_tested':False}
 (out/'receipt.json').write_text(json.dumps(receipt,indent=2))
 print(json.dumps(receipt,indent=2))
 

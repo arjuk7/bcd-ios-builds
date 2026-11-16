@@ -43,6 +43,8 @@ jobs:
             source/build-out/*.log
             source/build-out/*.json
             source/build-out/queen-alias/*.json
+            source/build-out/queen-alias/*.dll
+            source/FEX/build-arm64ec/Source/Windows/ARM64EC/CMakeFiles/arm64ecfex.dir/Module.S.obj
             source/build-out/queen-native/*.json
             source/FEX/build-arm64ec*.log
           if-no-files-found: ignore
