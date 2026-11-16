@@ -32,6 +32,14 @@ git -C source apply --index --binary "$GITHUB_WORKSPACE/inputs/touch.patch"
 test "$(git -C source write-tree)" = 13d3e63472decd675bfab63c9237aa95114f6d98
 git -C source submodule update --init --recursive --depth 1 --jobs 4 FEX dxmt
 cd source
+# Migration was explicitly authorized; retain donor origin, add only new private app provenance.
+python3 - <<'PY'
+from pathlib import Path
+p=Path('tools/touch-packs/reuse-v653-donor.py');s=p.read_text()
+a="'arjuks-9/bcd-touch', 'arjuk8-dot/bcd-ios-builds'"
+assert s.count(a)==1
+p.write_text(s.replace(a,a+", 'arjuk7/bcd-ios-builds'"))
+PY
 mkdir -p build-out toolchains
 # Exact previous compiler; do not silently substitute Xcode27.
 test -d /Applications/Xcode_26.3.app

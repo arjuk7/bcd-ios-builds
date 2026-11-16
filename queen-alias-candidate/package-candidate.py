@@ -4,7 +4,7 @@ from pathlib import Path
 root=Path.cwd();cfg=Path(sys.argv[1]).resolve();app=root/'build-out/reused/Payload/Madeira.app'
 sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
 newdll=root/'build-out/queen-alias/xtajit64-queen-alias.dll'
-receipt=json.loads((root/'build-out/queen-alias/receipt.json').read_text());assert receipt['baseline_mapped_sections_identical'] and receipt['stock_preserved']
+receipt=json.loads((root/'build-out/queen-alias/receipt.json').read_text());assert receipt['baseline_timestamp_normalized_identical'] and receipt['stock_preserved']
 assert sha(newdll)==receipt['candidate_sha256']
 shutil.copyfile(root/'build-out/new-dll/kernelbase.dll',app/'arm64ec-windows/kernelbase.dll')
 expected=json.loads((cfg/'baseline660-files.json').read_text())
