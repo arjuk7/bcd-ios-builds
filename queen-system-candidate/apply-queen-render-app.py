@@ -8,7 +8,7 @@ a='        if useQueenNav { setenv("BCD_QUEEN_NATIVE_NAV", "1", 1) }\n        el
 b='''        // Explicit per-game value 0 permits independent A/B without another IPA.
         if useQueenNav {
             if getenv("BCD_QUEEN_NATIVE_NAV") == nil { setenv("BCD_QUEEN_NATIVE_NAV", "1", 1) }
-            if getenv("BCD_QUEEN_RENDER_BATCH") == nil { setenv("BCD_QUEEN_RENDER_BATCH", "1", 1) }
+            if getenv("BCD_QUEEN_RENDER_BATCH") == nil { setenv("BCD_QUEEN_RENDER_BATCH", "0", 1) }
             if getenv("BCD_QUEEN_NATIVE_RHI") == nil { setenv("BCD_QUEEN_NATIVE_RHI", "1", 1) }
         } else {
             unsetenv("BCD_QUEEN_NATIVE_NAV")
@@ -54,3 +54,4 @@ a='    unsetenv("BCD_QUEEN_NATIVE_NAV");'
 assert s.count(a)==1;s=s.replace(a,a+'\n    unsetenv("BCD_QUEEN_RENDER_BATCH");\n    unsetenv("BCD_QUEEN_NATIVE_RHI");')
 p.write_text(s)
 print('Queen-only renderer selection wired after existing source-DLL override; independent per-game opt-out retained')
+

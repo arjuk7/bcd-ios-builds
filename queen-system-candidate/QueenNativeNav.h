@@ -3,6 +3,7 @@
 #pragma once
 #include "QueenNativeNavFingerprint.h"
 #include "QueenNativeNavKernel.h"
+#include "QueenSelfExport.h"
 
 extern "C" void QueenNativeLedgeFilter(void* context, int height, int climb, queen_nav662::HF* hf) {
   // ARM64EC compiler emits the mixed-ABI indirect-call checker for this call.
@@ -40,15 +41,18 @@ static void InstallQueenNativeNav(void* mainModule) {
     LogMan::Msg::EFmt("[queen-nav] image fingerprint mismatch; original translation retained");
     return;
   }
-  auto module = reinterpret_cast<HMODULE>(&__ImageBase);
-  const uintptr_t entry = reinterpret_cast<uintptr_t>(GetProcAddress(module, "QueenNativeLedgeFilter"));
-  if (!entry) {
-    LogMan::Msg::EFmt("[queen-nav] missing compiler-produced PE helper entry; original retained");
+  const auto self = queen_self_export::Resolve(reinterpret_cast<uintptr_t>(&__ImageBase),
+      reinterpret_cast<uintptr_t>(&QueenNativeLedgeFilter), "QueenNativeLedgeFilter");
+  LogMan::Msg::EFmt("[queen-nav] self export raw={:#x} image={:#x} ffs={:#x} native={:#x}",
+      reinterpret_cast<uintptr_t>(&__ImageBase), self.image, self.ffs, self.native);
+  if (!self.ffs) {
+    LogMan::Msg::EFmt("[queen-nav] self PE export validation failed; original retained");
     return;
   }
   // Resolve only an executable alias, never rewrite any guest data pointer.
-  const uintptr_t guestEntry = IosJitReverseTranslate(entry);
+  const uintptr_t guestEntry = self.ffs;
   CTX->AddThunkTrampolineIRHandler(base + queen_nav662::KernelRVA, guestEntry);
   LogMan::Msg::EFmt("[queen-nav] registered validated main-image kernel {:#x} -> PE helper {:#x}",
                     base + queen_nav662::KernelRVA, guestEntry);
 }
+

@@ -30,14 +30,17 @@ static void InstallQueenNativeRhi(void* mainModule) {
     LogMan::Msg::EFmt("[queen-rhi] exact image/function mismatch; original translation retained");
     return;
   }
-  auto module=reinterpret_cast<HMODULE>(&__ImageBase);
-  const uintptr_t entry=reinterpret_cast<uintptr_t>(GetProcAddress(module,"QueenNativeBoundShaderState"));
-  if (!entry) {
-    LogMan::Msg::EFmt("[queen-rhi] compiler PE export absent; original translation retained");
+  const auto self=queen_self_export::Resolve(reinterpret_cast<uintptr_t>(&__ImageBase),
+      reinterpret_cast<uintptr_t>(&QueenNativeBoundShaderState), "QueenNativeBoundShaderState");
+  LogMan::Msg::EFmt("[queen-rhi] self export raw={:#x} image={:#x} ffs={:#x} native={:#x}",
+      reinterpret_cast<uintptr_t>(&__ImageBase), self.image, self.ffs, self.native);
+  if (!self.ffs) {
+    LogMan::Msg::EFmt("[queen-rhi] self PE export validation failed; original translation retained");
     return;
   }
   QueenRhiImageBase=image;
-  const auto guestEntry=IosJitReverseTranslate(entry);
+  const auto guestEntry=self.ffs;
   CTX->AddThunkTrampolineIRHandler(base+0x1453cf0,guestEntry);
   LogMan::Msg::EFmt("[queen-rhi] registered full bound-shader state {:#x} -> PE helper {:#x}",base+0x1453cf0,guestEntry);
 }
+
