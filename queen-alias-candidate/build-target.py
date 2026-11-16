@@ -34,13 +34,13 @@ def sections(img):
 def normalized_sections(img):
     data=bytearray(img.d)
     # Observed remaining drift: only this human-readable __DATE__/__TIME__ log.
-    pattern=rb'(\\[build-id\\] xtajit64 rev=ml908 compiled )([A-Z][a-z]{2} [ 0-9][0-9] [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2})(\\x00)'
+    pattern=rb'(\[build-id\] xtajit64 rev=ml908 compiled )([A-Z][a-z]{2} [ 0-9][0-9] [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2})(\x00)'
     matches=list(re.finditer(pattern,data));assert len(matches)==1
     m=matches[0];data[m.start(2):m.end(2)]=b'0'*len(m.group(2))
-    for off in img.timestamp_offsets(): data[off:off+4]=b'\\0'*4
+    for off in img.timestamp_offsets(): data[off:off+4]=b'\0'*4
     if img.dirs[0][0]:
         off=img.off(img.dirs[0][0])+4 # IMAGE_EXPORT_DIRECTORY.TimeDateStamp
-        data[off:off+4]=b'\\0'*4
+        data[off:off+4]=b'\0'*4
     return {name:(va,vs,sha(data[raw:raw+min(vs,rs)])) for name,va,vs,raw,rs,ch in img.secs if not name.startswith('.debug') and name!='.buildid'}
 diffs=[]
 for sa,sb in zip(a.secs,b.secs):
