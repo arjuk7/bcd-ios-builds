@@ -1,0 +1,71 @@
+name: BCD665 Queen guest leaf boundary candidate
+'on':
+  push:
+    branches: [queen-system-665]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: bcd665-queen-nav
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.repository == 'arjuk7/bcd-ios-builds' && contains(github.event.head_commit.message, '[queen-system-665-build]')
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONUNBUFFERED: '1'
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Targeted emulator component and app-only relink
+        shell: bash
+        run: bash queen-system-candidate/run-build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BCD-665-Queen-System-existing-update
+          path: |
+            source/build-out/BCD-665-Queen-System-update.ipa
+            source/build-out/ipa.sha256
+            source/build-out/existing-update/package-receipt.json
+            source/build-out/queen-nav-package-receipt.json
+            source/build-out/queen-nav/receipt.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BCD-665-Queen-System-build-logs
+          path: |
+            source/build-out/*.log
+            source/build-out/*.json
+            source/build-out/queen-nav/*.json
+            source/build-out/queen-nav/*.dll
+            source/build-out/queen-nav/*.txt
+            source/build-out/queen-render/*.json
+            source/build-out/queen-render/*.dll
+            source/build-out/queen-render/*.txt
+            source/build-out/queen-render/*.raw
+            source/FEX/build-arm64ec/Source/Windows/ARM64EC/CMakeFiles/arm64ecfex.dir/Module.cpp.obj
+            source/build-out/queen-native/*.json
+            source/FEX/build-arm64ec*.log
+          if-no-files-found: ignore
+
+      - name: Preserve compiled archive for packaging-only recovery
+        if: always()
+        shell: bash
+        run: |
+          if [ -d source/build-out/Madeira.xcarchive ]; then
+            tar -czf source/build-out/Madeira-compiled-665.xcarchive.tar.gz -C source/build-out Madeira.xcarchive
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BCD-665-Queen-System-compiled-app
+          path: source/build-out/Madeira-compiled-665.xcarchive.tar.gz
+          if-no-files-found: ignore
+
+

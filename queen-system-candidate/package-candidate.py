@@ -22,11 +22,11 @@ shutil.copyfile(newdll,app/'arm64ec-windows/xtajit64-queen-nav.dll')
 renderer=root/'build-out/queen-render/d3d11-queen-render.dll'
 rr=json.loads((root/'build-out/queen-render/receipt.json').read_text());assert sha(renderer)==rr['candidate_sha256'] and rr['exports_imports_verified']
 shutil.copyfile(renderer,app/'arm64ec-windows/d3d11-queen.dll')
-p=app/'Info.plist';info=plistlib.loads(p.read_bytes());assert info['CFBundleVersion']=='664'
+p=app/'Info.plist';info=plistlib.loads(p.read_bytes());assert info['CFBundleVersion']=='665'
 info['BCDQueenNativeNav']=True
-info['BCDValidationStatus']='QUEEN_SYSTEM_CANDIDATE_USER_TEST'
+info['BCDValidationStatus']='QUEEN_GUEST_LEAF_CANDIDATE_USER_TEST'
 p.write_bytes(plistlib.dumps(info,fmt=plistlib.FMT_BINARY,sort_keys=False))
-(root/'build-out/queen-nav-package-receipt.json').write_text(json.dumps({'baseline660_runtime_files_verified':len(verified),'signature_metadata_exceptions':sorted(exceptions),'added_runtime':'arm64ec-windows/xtajit64-queen-nav.dll','candidate':receipt,'renderer':rr,'added_renderer':'arm64ec-windows/d3d11-queen.dll','device_tested':False},indent=2))
+(root/'build-out/queen-nav-package-receipt.json').write_text(json.dumps({'baseline660_runtime_files_verified':len(verified),'signature_metadata_exceptions':sorted(exceptions),'added_runtime':'arm64ec-windows/xtajit64-queen-nav.dll','candidate':receipt,'renderer':rr,'added_renderer':'arm64ec-windows/d3d11-queen.dll','guest_leaf_contracts':['TlsGetValue','GetCurrentThreadId'],'native_api_bodies_unchanged':True,'device_tested':False},indent=2))
 spec=importlib.util.spec_from_file_location('signer',root/'tools/ota-variants.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);m.fakesign(str(app))
 
 

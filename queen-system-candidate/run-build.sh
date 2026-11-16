@@ -70,19 +70,19 @@ python3 tools/stikjit-interface-compat.py app/Frameworks/StikJIT.xcframework
 python3 - <<'PY'
 import datetime,os,plistlib
 from pathlib import Path
-p=Path('app/Madeira/Info.plist');d=plistlib.loads(p.read_bytes());d.update(CFBundleVersion='664',CFBundleShortVersionString='0.1.664',MadeiraCommit=os.environ['GITHUB_SHA'],MadeiraRepo=os.environ['GITHUB_REPOSITORY'],MadeiraBuilt=datetime.datetime.now(datetime.timezone.utc).isoformat(),BCDDeviceValidationStatus='NOT_RUN',BCDFullValidationRunStatus='NOT_RUN');p.write_bytes(plistlib.dumps(d,fmt=plistlib.FMT_XML,sort_keys=False))
+p=Path('app/Madeira/Info.plist');d=plistlib.loads(p.read_bytes());d.update(CFBundleVersion='665',CFBundleShortVersionString='0.1.665',MadeiraCommit=os.environ['GITHUB_SHA'],MadeiraRepo=os.environ['GITHUB_REPOSITORY'],MadeiraBuilt=datetime.datetime.now(datetime.timezone.utc).isoformat(),BCDDeviceValidationStatus='NOT_RUN',BCDFullValidationRunStatus='NOT_RUN');p.write_bytes(plistlib.dumps(d,fmt=plistlib.FMT_XML,sort_keys=False))
 PY
 xcodebuild -project app/Madeira.xcodeproj -scheme Madeira -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO archive -archivePath build-out/Madeira.xcarchive > build-out/archive.log 2>&1 || { tail -150 build-out/archive.log; exit 1; }
 python3 tools/touch-packs/reuse-v653-donor.py assemble --prepared build-out/donor --compiled-app build-out/Madeira.xcarchive/Products/Applications/Madeira.app --source "$GITHUB_SHA" --app-repository "$GITHUB_REPOSITORY" --output build-out/reused
 python3 tools/touch-packs/reuse-v653-donor.py verify --output build-out/reused
 python3 "$ORCH/package-candidate.py" "$ORCH"
 codesign --verify --deep --strict build-out/reused/Payload/Madeira.app
-(cd build-out/reused && zip -qry ../BCD-664-Queen-System-unsigned.ipa Payload)
-source_sha=$(shasum -a256 build-out/BCD-664-Queen-System-unsigned.ipa | awk '{print $1}')
+(cd build-out/reused && zip -qry ../BCD-665-Queen-System-unsigned.ipa Payload)
+source_sha=$(shasum -a256 build-out/BCD-665-Queen-System-unsigned.ipa | awk '{print $1}')
 # Preserve the installed com.thebcd69.bcd slot; raw donor is com.arjunkl.bcdtouch.
-python3 tools/touch-packs/package-sideload.py build-out/BCD-664-Queen-System-unsigned.ipa --mode existing --output build-out/existing-update --expected-source "$GITHUB_SHA" --expected-ipa-sha "$source_sha"
-cp build-out/existing-update/BCD-Touch-update-existing-unsigned.ipa build-out/BCD-664-Queen-System-update.ipa
-shasum -a256 build-out/BCD-664-Queen-System-update.ipa > build-out/ipa.sha256
+python3 tools/touch-packs/package-sideload.py build-out/BCD-665-Queen-System-unsigned.ipa --mode existing --output build-out/existing-update --expected-source "$GITHUB_SHA" --expected-ipa-sha "$source_sha"
+cp build-out/existing-update/BCD-Touch-update-existing-unsigned.ipa build-out/BCD-665-Queen-System-update.ipa
+shasum -a256 build-out/BCD-665-Queen-System-update.ipa > build-out/ipa.sha256
 
 
 
