@@ -3,7 +3,7 @@
 Never replaces stock files. Fail closed if retained baseline does not reproduce.
 Run from reconstructed source root; argument is candidate files directory.
 """
-import hashlib,importlib.util,json,os,subprocess,sys,struct
+import hashlib,importlib.util,json,os,subprocess,sys,struct,re
 from pathlib import Path
 root=Path.cwd(); cfg=Path(sys.argv[1]).resolve(); out=root/'build-out/queen-alias';out.mkdir(parents=True,exist_ok=False)
 sha=lambda b:hashlib.sha256(b).hexdigest()
@@ -33,6 +33,10 @@ def sections(img):
 # Exclude only PE-defined timestamp fields; do not mistake build time for code drift.
 def normalized_sections(img):
     data=bytearray(img.d)
+    # Observed remaining drift: only this human-readable __DATE__/__TIME__ log.
+    pattern=rb'(\\[build-id\\] xtajit64 rev=ml908 compiled )([A-Z][a-z]{2} [ 0-9][0-9] [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2})(\\x00)'
+    matches=list(re.finditer(pattern,data));assert len(matches)==1
+    m=matches[0];data[m.start(2):m.end(2)]=b'0'*len(m.group(2))
     for off in img.timestamp_offsets(): data[off:off+4]=b'\\0'*4
     if img.dirs[0][0]:
         off=img.off(img.dirs[0][0])+4 # IMAGE_EXPORT_DIRECTORY.TimeDateStamp
