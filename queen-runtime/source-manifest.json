@@ -1,0 +1,31 @@
+{
+  "base": "e5b9da7de835b02c0ecd229ef3b921a061545e51",
+  "files": {
+    "app.patch": {
+      "sha256": "f743154f8385933346b11260e07a1b517730851bf4de9172fb3e440e41ed27f3",
+      "bytes": 31440
+    },
+    "build-runtime.sh": {
+      "sha256": "2116dd0e9984b6a7f96547c4b6f761b11f068a052f152a2236b8b6b06049f214",
+      "bytes": 3139
+    },
+    "extract-native.py": {
+      "sha256": "09d2358e4dd5f435dbab199e254b9da2a8d414c3727edb192b001c600fcfb2c4",
+      "bytes": 1151
+    },
+    "package-runtime.py": {
+      "sha256": "6618992daddb04158ed26e9ad1e8e6fc0cd5adc84395216d6376edd6e5bb55e9",
+      "bytes": 3389
+    },
+    "README.md": {
+      "sha256": "f6cf035c6b96565a273d15a551b4b3d9a01b590e19fd082cb9653a66e380c388",
+      "bytes": 4198
+    }
+  },
+  "validation": {
+    "python_syntax": true,
+    "patch_applies_to_exact_base_index": true,
+    "swift_compiled": false,
+    "device_tested": false
+  }
+}
