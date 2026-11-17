@@ -2,12 +2,16 @@
   "base": "e5b9da7de835b02c0ecd229ef3b921a061545e51",
   "files": {
     "app.patch": {
-      "sha256": "f743154f8385933346b11260e07a1b517730851bf4de9172fb3e440e41ed27f3",
-      "bytes": 31440
+      "sha256": "4976317d1fd05f410c41df654828d1263ddc6b346301de117d84a647d8559cef",
+      "bytes": 31726
     },
     "build-runtime.sh": {
-      "sha256": "2116dd0e9984b6a7f96547c4b6f761b11f068a052f152a2236b8b6b06049f214",
-      "bytes": 3139
+      "sha256": "07421e68a0fcc6670d2860b039bd124edb2365a6c49bdb53b820c081bbc0e6df",
+      "bytes": 3776
+    },
+    "CHECKPOINT.md": {
+      "sha256": "4aaefdd1c8a13729bb9027bb2e15dd0f6cafd3d32c9715d62b959da2f000a95f",
+      "bytes": 2319
     },
     "extract-native.py": {
       "sha256": "09d2358e4dd5f435dbab199e254b9da2a8d414c3727edb192b001c600fcfb2c4",
@@ -18,13 +22,24 @@
       "bytes": 3389
     },
     "README.md": {
-      "sha256": "f6cf035c6b96565a273d15a551b4b3d9a01b590e19fd082cb9653a66e380c388",
-      "bytes": 4198
+      "sha256": "bffcb58ac378b738f5924f63017a0e86763bfc29b4268f3897122baec34da247",
+      "bytes": 4603
+    },
+    "test-transfer-queen.py": {
+      "sha256": "e98113f1f1e957bec5c7a707be323e93ec39eef1ce0aa39a4441712c695c99bd",
+      "bytes": 5972
+    },
+    "transfer-queen.py": {
+      "sha256": "247a75997f3d807811c4698cdc40d2764a9c83dba923bc572d3e3f495db30c24",
+      "bytes": 11308
     }
   },
   "validation": {
     "python_syntax": true,
+    "bash_syntax": true,
+    "diff_whitespace": true,
     "patch_applies_to_exact_base_index": true,
+    "transfer_cases": 6,
     "swift_compiled": false,
     "device_tested": false
   }

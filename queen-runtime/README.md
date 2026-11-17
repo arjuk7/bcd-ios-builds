@@ -18,7 +18,7 @@ Whole-frame measurement reuses the existing Present ring; it adds no new per-fra
 
 ## Build
 
-Private orchestration only. Existing retained emulator/runtime assets are downloaded from the existing private release. No retail executable, PAK, save, phone log or private game asset is uploaded. Restore retained native archives and compile only the verified 659 object plus the app. Reuse the delivered compiled optional FEX component when accessible. No emulator rebuild and no duplicate workflow dispatch.
+Builds use the existing public source build repository and its already-published emulator/runtime artifacts; the private recipe remains available. No private release input is used by the public job. No retail executable, PAK, save, phone log or private game asset is uploaded. Restore retained native archives and compile only the verified 659 object plus the app. Reuse the delivered compiled optional FEX component when accessible. No emulator rebuild and no duplicate workflow dispatch.
 
 The app is compiled with Release / Swift -O / C-family -O3. Packaging checks all donor runtime files, app/helper IDs, required memory/JIT entitlements and deep code signatures. The resulting IPA is ad-hoc signed and needs normal personal sideload signing. Compile/package checks are not phone launch, save migration, graphics correctness or performance validation.
 
@@ -27,3 +27,5 @@ The app is compiled with Release / Swift -O / C-family -O3. Packaging checks all
 Use one existing save and fixed camera/action sequence, frame generation off, same runtime lane and cool-start state. First reference at 1168x536, then 1440x800; close the app between runs. Capture the logs and Documents/logs/queen-runtime JSON/CSV files. Repeat native render at one matched resolution only if reference logs and native activation confirm a useful render-thread opportunity. Need matched frame times, render submission/readback cost and thermal context before choosing a further targeted change.
 
 The new bundle cannot read the existing BCD container directly under iOS sandboxing. Game-folder import copies game files only. Existing saves and personal layouts require the copy-only transfer helper or a reviewed equivalent backup restore. Do not present game-folder import as save migration.
+
+The copy-only transfer helper has six synthetic integrity and overwrite-protection checks. It has not transferred a real phone save. Use export with --game-root Games/QueensDomain, keep the local backup private, and restore only into a fresh, still-closed separate runtime app. Existing destination files are always refused.

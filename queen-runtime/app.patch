@@ -54,7 +54,7 @@ index 9772e2e3..a552f05f 100644
      static func closingOnPurpose() { onMain { BCDSessionRecorderLive.shared.removeMarker() } }
      /// LibraryModel.init: a marker from the run before says that session never came back; Send Log's comment box learns to offer a screenshot.
 diff --git a/app/Madeira/ContentView.swift b/app/Madeira/ContentView.swift
-index bee5eb23..05a3a210 100644
+index bee5eb23..93d48f7e 100644
 --- a/app/Madeira/ContentView.swift
 +++ b/app/Madeira/ContentView.swift
 @@ -1142,8 +1142,12 @@ struct ContentView: View {
@@ -72,7 +72,7 @@ index bee5eb23..05a3a210 100644
              }
          }
          .modifier(BCDFoldableWatch())   // madeira-bcd foldable (experimental, BCDFoldableUI.swift): on the foldable iPhone, a window under 700 pt reads as compact, independently of the experimental game-support switch
-@@ -1413,6 +1417,10 @@ struct ContentView: View {
+@@ -1413,6 +1417,11 @@ struct ContentView: View {
      /// applies the entry's launch profile and runs the same full sequence as the
      /// developer interface's buttons.
      private func launchLibraryEntry(_ entry: LibraryEntry) {
@@ -80,6 +80,7 @@ index bee5eb23..05a3a210 100644
 +            library.error = "This runtime starts QueensDomain-Win64-Shipping.exe only."
 +            return
 +        }
++        if QueenRuntime.enabled { QueenRuntime.started = true }
          // A game on an external drive (Settings › Storage › External drives): when the drive is not open, its saved folder is
          // opened again without the picker; if the program is still out of reach, say so. Nothing here for any other game.
          if let drive = ExternalDrives.driveName(library: entry.relativePath) {
@@ -207,7 +208,7 @@ index 570d0b1c..356fa721 100644
          fputs("[frontend] launch profile applied\n", stderr)
          if usesLaunchOptions {
 diff --git a/app/Madeira/MadeiraApp.swift b/app/Madeira/MadeiraApp.swift
-index ea4aef64..32224718 100644
+index ea4aef64..72fb9f5d 100644
 --- a/app/Madeira/MadeiraApp.swift
 +++ b/app/Madeira/MadeiraApp.swift
 @@ -4,6 +4,7 @@
@@ -218,7 +219,7 @@ index ea4aef64..32224718 100644
  
  @main
  struct MadeiraApp: App {
-@@ -56,3 +57,294 @@ struct MadeiraApp: App {
+@@ -56,3 +57,297 @@ struct MadeiraApp: App {
          }
      }
  }
@@ -289,8 +290,6 @@ index ea4aef64..32224718 100644
 +                        launch.frameGeneration = false
 +                        launch.fpsMode = 2
 +                        hasLaunched = true
-+                    QueenRuntime.started = true
-+                        QueenRuntime.started = true
 +                        play(launch)
 +                    }.disabled(busy)
 +                } else {
@@ -426,7 +425,11 @@ index ea4aef64..32224718 100644
 +        gaps = []; rows = []; lost = 0; invalidated = false
 +        foregroundObserver = NotificationCenter.default.addObserver(
 +            forName: UIApplication.willResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
-+                MainActor.assumeIsolated { self?.invalidated = true }
++                MainActor.assumeIsolated {
++                    guard let self else { return }
++                    if self.captureAt != nil { self.invalidated = true }
++                    else { self.firstPresentAt = nil; self.initialCount = bcd_frame_ring_count() }
++                }
 +            }
 +        let value = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
 +            MainActor.assumeIsolated { self?.sample() }
@@ -437,6 +440,7 @@ index ea4aef64..32224718 100644
 +    }
 +
 +    private func sample() {
++        guard UIApplication.shared.applicationState == .active else { return }
 +        let now = bcd_frame_ticks_to_seconds(bcd_frame_now_ticks())
 +        if firstPresentAt == nil {
 +            guard bcd_frame_ring_count() > initialCount else { return }
@@ -488,7 +492,7 @@ index ea4aef64..32224718 100644
 +        let elapsed = bcd_frame_ticks_to_seconds(bcd_frame_now_ticks()) - start
 +        var report: [String: Any] = [
 +            "schema":1, "reason":reason, "seconds":elapsed, "frame_intervals":gaps.count,
-+            "lost_ring_entries":lost, "resolution":game.resolution, "frame_generation":false,
++            "lost_ring_entries":lost, "resolution":game.resolution, "fps_mode":game.fpsMode, "frame_generation":false,
 +            "foreground_interrupted":invalidated, "build":BuildStamp.text,
 +            "lane":UserDefaults.standard.bool(forKey:"queen.runtime.nativeRender") ? "native-render" : "reference-659",
 +            "valid_complete_window":reason == "complete" && !invalidated && lost == 0 && !gaps.isEmpty,

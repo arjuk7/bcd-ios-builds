@@ -8,7 +8,16 @@ git apply "$ORCH/app.patch"
 git submodule update --init --recursive --depth 1 --jobs 4 FEX dxmt
 mkdir -p build-out ../inputs
 # All release inputs are existing emulator/runtime artifacts, never retail game files.
-gh release download bcd-retained-v653-native654-v1 --repo "$GITHUB_REPOSITORY" --dir ../inputs --pattern donor.zip --pattern retained-native-inputs.zip --pattern 'retained-*-metadata.json'
+if [ "$GITHUB_REPOSITORY" = arjuk95-dot/bcd-touch ]; then
+  gh api repos/arjuk95-dot/bcd-touch/actions/artifacts/13955942602/zip > ../inputs/donor.zip
+  gh api repos/arjuk95-dot/bcd-touch/actions/artifacts/14055382553/zip > ../inputs/retained-native-inputs.zip
+  gh api repos/arjuk95-dot/bcd-touch/actions/artifacts/14055382553 > ../inputs/retained-artifact-metadata.json
+  gh api repos/arjuk95-dot/bcd-touch/actions/runs/43453839217 > ../inputs/retained-run-metadata.json
+  gh api repos/arjuk95-dot/bcd-touch/actions/jobs/131982686963 > ../inputs/retained-job-metadata.json
+else
+  test "$GITHUB_REPOSITORY" = arjuk7/bcd-ios-builds
+  gh release download bcd-retained-v653-native654-v1 --repo "$GITHUB_REPOSITORY" --dir ../inputs --pattern donor.zip --pattern retained-native-inputs.zip --pattern 'retained-*-metadata.json'
+fi
 echo '76d08cd7331319657162f15ec4fc6fd41abdd299687b7d3d230d540d18f50d0f  ../inputs/donor.zip' | shasum -a256 -c -
 echo '8f35e438c0814a3bfe4775089db2a7d6a84858aa161c9aea0d4c667f42d8e4ea  ../inputs/retained-native-inputs.zip' | shasum -a256 -c -
 test -d /Applications/Xcode_26.3.app
