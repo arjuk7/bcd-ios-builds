@@ -30,7 +30,7 @@ Path('inputs/touch.patch').write_bytes(b)
 PY
 git -C source apply --index --binary "$GITHUB_WORKSPACE/inputs/touch.patch"
 test "$(git -C source write-tree)" = 13d3e63472decd675bfab63c9237aa95114f6d98
-git -C source submodule update --init --recursive --depth 1 --jobs 4 FEX dxmt
+git -C source submodule update --init --recursive --depth 1 --jobs 4 FEX dxmt wine
 cd source
 # Migration was explicitly authorized; retain donor origin, add only new private app provenance.
 python3 - <<'PY'
@@ -52,8 +52,14 @@ echo 'bd85a3975723815cef28dbbd2ca2cb0c926f6b348a12a0453f39f7af273cb3f7  ../input
 tar -xJf ../inputs/mingw.tar.xz -C toolchains
 export MINGW="$PWD/toolchains/llvm-mingw-20260421-ucrt-macos-universal/bin"
 command -v cmake >/dev/null; command -v ninja >/dev/null
+# Native header prerequisites are rebuilt only from the retained Wine pin.
+export PATH="$(brew --prefix llvm)/bin:$(brew --prefix lld)/bin:$PATH"
+bash "$ORCH/queen667/prepare-wine-headers.sh"
+python3 "$ORCH/queen667/build-floor-native.py" "$PWD"
+python3 "$ORCH/queen667/diagnostics/gate-copy.py" "$ORCH"
 python3 "$ORCH/build-target.py" "$ORCH"
 export QUEEN_RENDER_PATCH="$ORCH/queen-render-v2.patch"
+export QUEEN_DIAGNOSTICS_PATCHER="$ORCH/queen667/renderer/apply-production-diagnostics.py"
 bash "$ORCH/render-build/build-queen-render.sh"
 # Preserve prior659 DXMT object, not just old654 retained archive.
 python3 "$ORCH/queen-native-candidate/compile-one-object.py" --repo "$PWD" --output "$PWD/build-out/queen-native"
@@ -70,25 +76,34 @@ git apply --check "$ORCH/queen-nav-app-and-badge.patch"
 git apply "$ORCH/queen-nav-app-and-badge.patch"
 python3 "$ORCH/apply-queen-render-app.py" "$PWD"
 python3 "$ORCH/apply-render-v2-selection.py" "$PWD"
+python3 "$ORCH/queen667/diagnostics/apply-profile.py" "$PWD"
 git apply --check "$ORCH/inscryption-lower-left.patch"
 git apply "$ORCH/inscryption-lower-left.patch"
 python3 tools/stikjit-interface-compat.py app/Frameworks/StikJIT.xcframework
 python3 - <<'PY'
 import datetime,os,plistlib
 from pathlib import Path
-p=Path('app/Madeira/Info.plist');d=plistlib.loads(p.read_bytes());d.update(CFBundleVersion='666',CFBundleShortVersionString='0.1.666',MadeiraCommit=os.environ['GITHUB_SHA'],MadeiraRepo=os.environ['GITHUB_REPOSITORY'],MadeiraBuilt=datetime.datetime.now(datetime.timezone.utc).isoformat(),BCDDeviceValidationStatus='NOT_RUN',BCDFullValidationRunStatus='NOT_RUN');p.write_bytes(plistlib.dumps(d,fmt=plistlib.FMT_XML,sort_keys=False))
+p=Path('app/Madeira/Info.plist');d=plistlib.loads(p.read_bytes());d.update(CFBundleVersion='667',CFBundleShortVersionString='0.1.667',MadeiraCommit=os.environ['GITHUB_SHA'],MadeiraRepo=os.environ['GITHUB_REPOSITORY'],MadeiraBuilt=datetime.datetime.now(datetime.timezone.utc).isoformat(),BCDDeviceValidationStatus='NOT_RUN',BCDFullValidationRunStatus='NOT_RUN');p.write_bytes(plistlib.dumps(d,fmt=plistlib.FMT_XML,sort_keys=False))
 PY
-xcodebuild -project app/Madeira.xcodeproj -scheme Madeira -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO archive -archivePath build-out/Madeira.xcarchive > build-out/archive.log 2>&1 || { tail -150 build-out/archive.log; exit 1; }
+xcodebuild -project app/Madeira.xcodeproj -scheme Madeira -sdk iphoneos -configuration Release CODE_SIGNING_ALLOWED=NO -showBuildSettings > build-out/release-build-settings.txt
+python3 - <<'CHECK'
+from pathlib import Path
+s=Path('build-out/release-build-settings.txt').read_text()
+assert 'SWIFT_OPTIMIZATION_LEVEL = -Onone' not in s
+assert 'GCC_OPTIMIZATION_LEVEL = 0' not in s
+assert 'SWIFT_OPTIMIZATION_LEVEL = -O' in s
+CHECK
+xcodebuild -project app/Madeira.xcodeproj -scheme Madeira -sdk iphoneos -configuration Release CODE_SIGNING_ALLOWED=NO archive -archivePath build-out/Madeira.xcarchive > build-out/archive.log 2>&1 || { tail -150 build-out/archive.log; exit 1; }
 python3 tools/touch-packs/reuse-v653-donor.py assemble --prepared build-out/donor --compiled-app build-out/Madeira.xcarchive/Products/Applications/Madeira.app --source "$GITHUB_SHA" --app-repository "$GITHUB_REPOSITORY" --output build-out/reused
 python3 tools/touch-packs/reuse-v653-donor.py verify --output build-out/reused
 python3 "$ORCH/package-candidate.py" "$ORCH"
 codesign --verify --deep --strict build-out/reused/Payload/Madeira.app
-(cd build-out/reused && zip -qry ../BCD-666-Queen-System-unsigned.ipa Payload)
-source_sha=$(shasum -a256 build-out/BCD-666-Queen-System-unsigned.ipa | awk '{print $1}')
+(cd build-out/reused && zip -qry ../BCD-667-Queen-System-unsigned.ipa Payload)
+source_sha=$(shasum -a256 build-out/BCD-667-Queen-System-unsigned.ipa | awk '{print $1}')
 # Preserve the installed com.thebcd69.bcd slot; raw donor is com.arjunkl.bcdtouch.
-python3 tools/touch-packs/package-sideload.py build-out/BCD-666-Queen-System-unsigned.ipa --mode existing --output build-out/existing-update --expected-source "$GITHUB_SHA" --expected-ipa-sha "$source_sha"
-cp build-out/existing-update/BCD-Touch-update-existing-unsigned.ipa build-out/BCD-666-Queen-System-update.ipa
-shasum -a256 build-out/BCD-666-Queen-System-update.ipa > build-out/ipa.sha256
+python3 tools/touch-packs/package-sideload.py build-out/BCD-667-Queen-System-unsigned.ipa --mode existing --output build-out/existing-update --expected-source "$GITHUB_SHA" --expected-ipa-sha "$source_sha"
+cp build-out/existing-update/BCD-Touch-update-existing-unsigned.ipa build-out/BCD-667-Queen-System-update.ipa
+shasum -a256 build-out/BCD-667-Queen-System-update.ipa > build-out/ipa.sha256
 
 
 

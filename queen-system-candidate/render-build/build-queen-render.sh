@@ -248,11 +248,13 @@ assert paths and paths<=allowed,('Review dependency coverage before broadening p
 PY
 git -C "$OUT/tree" apply --check "$QUEEN_RENDER_PATCH"
 git -C "$OUT/tree" apply "$QUEEN_RENDER_PATCH"
+: "${QUEEN_DIAGNOSTICS_PATCHER:?exact reviewed diagnostics patcher path required}"
+python3 "$QUEEN_DIAGNOSTICS_PATCHER" "$OUT/tree"
 : > "$OUT/jobs"
 PATCHED_OBJ=()
 for s in "${D3D11_SRC[@]}"; do
     case "$s" in
-        d3d11/d3d11_shader|d3d11/d3d11_pipeline_gs)
+        d3d11/d3d11_shader|d3d11/d3d11_pipeline_gs|d3d11/d3d11_device|d3d11/d3d11_context_imm|d3d11/d3d11_context_def)
             o="$OUT/obj/$(obj_name "$s").o"
             job "$OUT/tree" "$OUT/tree/src/$s.cpp" "$o" d3d11 ;;
         *) o="$OUT/plain/obj/$(obj_name "$s").o" ;;
@@ -260,10 +262,11 @@ for s in "${D3D11_SRC[@]}"; do
     PATCHED_OBJ+=("$o")
 done
 job "$OUT/tree" "$OUT/tree/src/dxmt/dxmt_dynamic.cpp" "$OUT/obj/dxmt_dxmt_dynamic.o" dxmt
+job "$OUT/tree" "$OUT/tree/src/dxmt/dxmt_mem_census.cpp" "$OUT/obj/dxmt_dxmt_mem_census.o" dxmt
 run_jobs
 cp "$OUT/jobs" "$OUT/candidate-jobs.tsv"
 cp "$OUT/plain/libdxmt.a" "$OUT/libdxmt-queen.a"
-"$AR" rcs "$OUT/libdxmt-queen.a" "$OUT/obj/dxmt_dxmt_dynamic.o"
+"$AR" rcs "$OUT/libdxmt-queen.a" "$OUT/obj/dxmt_dxmt_dynamic.o" "$OUT/obj/dxmt_dxmt_mem_census.o"
 link_dll "$OUT/d3d11-queen-render.dll" "$OUT/libdxmt-queen.a" "${PATCHED_OBJ[@]}"
 
 # Preserve the real PE ABI and exact import library/symbol surface, not just DLL names.
@@ -314,7 +317,8 @@ baseline_imports=imports('baseline');candidate_imports=imports('candidate')
 assert baseline_imports==candidate_imports,'Candidate import delta needs exact symbol/DLL review; see import-comparison.json'
 report={'baseline_sha256':sha(p/'plain/d3d11.dll'),'candidate_sha256':sha(p/'d3d11-queen-render.dll'),
         'stock_baseline_symbol_layout_identical':(p/'stock.nm').read_text()==(p/'baseline.nm').read_text(),
-        'incremental_units':['dxmt_dynamic.cpp','d3d11_shader.cpp','d3d11_pipeline_gs.cpp'],
+        'incremental_units':['dxmt_dynamic.cpp','dxmt_mem_census.cpp','d3d11_shader.cpp','d3d11_pipeline_gs.cpp','d3d11_device.cpp','d3d11_context_imm.cpp','d3d11_context_def.cpp'],
+        'diagnostics_scope':'BCD_QUEEN_RENDER_V2=1; explicit BCD_QUEEN_DIAGNOSTICS=1 opt-in',
         'exports_imports_verified':True,'pe_machine':hex(next(iter(machines))),'arm64ec_code_ranges_verified':True,'device_tested':False,'not_packaged':True}
 (p/'receipt.json').write_text(json.dumps(report,indent=2))
 print(json.dumps(report,indent=2))
