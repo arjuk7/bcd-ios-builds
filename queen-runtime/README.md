@@ -28,4 +28,12 @@ Use one existing save and fixed camera/action sequence, frame generation off, sa
 
 The new bundle cannot read the existing BCD container directly under iOS sandboxing. Game-folder import copies game files only. Existing saves and personal layouts require the copy-only transfer helper or a reviewed equivalent backup restore. Do not present game-folder import as save migration.
 
-The copy-only transfer helper has six synthetic integrity and overwrite-protection checks. It has not transferred a real phone save. Use export with --game-root Games/QueensDomain, keep the local backup private, and restore only into a fresh, still-closed separate runtime app. Existing destination files are always refused.
+The copy-only transfer helper has seven synthetic integrity and overwrite-protection checks. It has not transferred a real phone save. Use export with --game-root Games/QueensDomain, keep the local backup private, and restore only into a fresh, still-closed separate runtime app. Existing destination files are always refused.
+
+## Private arjuk7 preparation, 2026-11-18
+
+Runtime source is synchronized from public 97078877; the app patch is unchanged. The private workflow retains its arjuk7/bcd-ios-builds repository guard and carries the final 60-minute limit, transfer checks, bounded archive progress and one retry of the identical IPA artifact upload.
+
+The job reads donor/native archives and provenance from its own private bcd-retained-v653-native654-v1 release. The reused 667 FEX DLL is also retained there as xtajit64-queen-nav-667.dll plus native667-provenance.json, removing a cross-repository Actions-artifact credential dependency. Its exact hash is checked before compiler work; it stays off by default at runtime. No personal credential is added to the workflow.
+
+This preparation does not prove a performance gain. Last private runner admission was blocked by GitHub account billing/spending limits; no new build should be triggered until account readiness is established.
