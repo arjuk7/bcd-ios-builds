@@ -3,10 +3,25 @@ set -euo pipefail
 ORCH="$GITHUB_WORKSPACE/queen-runtime"
 cd "$GITHUB_WORKSPACE/source"
 test "$(git rev-parse HEAD)" = e5b9da7de835b02c0ecd229ef3b921a061545e51
+# Retained native verification compares immutable source trees, not working files.
+git fetch --no-tags --depth 1 origin 2833ed85d945bb6623611200b558057f36f60f20
 git apply --check "$ORCH/app.patch"
 git apply "$ORCH/app.patch"
 git submodule update --init --recursive --depth 1 --jobs 4 FEX dxmt
 mkdir -p build-out ../inputs
+# Private optional runtime input is verified before any compiler work.
+if [ "$GITHUB_REPOSITORY" = arjuk7/bcd-ios-builds ]; then
+  gh release download bcd-retained-v653-native654-v1 --repo "$GITHUB_REPOSITORY" --dir ../inputs --pattern xtajit64-queen-nav-667.dll --pattern native667-provenance.json
+  echo '18e33d139eb0785820a665a9af5b37804ffe6809b431f88af73decf8a5fd7b5c  ../inputs/xtajit64-queen-nav-667.dll' | shasum -a256 -c -
+  python3 - <<'PY'
+import json
+from pathlib import Path
+p=json.loads(Path('../inputs/native667-provenance.json').read_text())
+assert p['sha256']=='18e33d139eb0785820a665a9af5b37804ffe6809b431f88af73decf8a5fd7b5c'
+assert p['origin_ipa_sha256']=='38869e825047b5875dd251b5a7193062057dbf2065fdb1668a037053a0b84399'
+assert p['bytes']==5509120 and p['retail_game_assets'] is False
+PY
+fi
 # All release inputs are existing emulator/runtime artifacts, never retail game files.
 if [ "$GITHUB_REPOSITORY" = arjuk95-dot/bcd-touch ]; then
   gh api repos/arjuk95-dot/bcd-touch/actions/artifacts/13955942602/zip > ../inputs/donor.zip
@@ -30,7 +45,10 @@ python3 queen-system-candidate/queen-native-candidate/compile-one-object.py --re
 # Optional compiled native game-workload lane from the delivered 667 artifact.
 # A private runner may lack permission to read a public repository's action artifact.
 # In that case reference remains useful, and the unavailable lane is disabled in UI.
-if gh api repos/arjuk95-dot/bcd-touch/actions/artifacts/14329248488/zip > ../inputs/native667.zip; then
+if [ "$GITHUB_REPOSITORY" = arjuk7/bcd-ios-builds ]; then
+  cp ../inputs/xtajit64-queen-nav-667.dll app/Madeira/arm64ec-windows/xtajit64-queen-nav.dll
+  cp ../inputs/native667-provenance.json build-out/native667-reuse.json
+elif gh api repos/arjuk95-dot/bcd-touch/actions/artifacts/14329248488/zip > ../inputs/native667.zip; then
   echo 'ec7a3df89deea5260fe5f1649ed8b55fa7aa494e310c02853d9e55f8ba7fdc8f  ../inputs/native667.zip' | shasum -a256 -c -
   python3 "$ORCH/extract-native.py" ../inputs/native667.zip app/Madeira/arm64ec-windows/xtajit64-queen-nav.dll
 else
@@ -44,5 +62,17 @@ p=Path('app/Madeira/Info.plist');d=plistlib.loads(p.read_bytes())
 d.update(MadeiraCommit=os.environ['GITHUB_SHA'],MadeiraRepo=os.environ['GITHUB_REPOSITORY'],MadeiraBuilt=datetime.datetime.now(datetime.timezone.utc).isoformat())
 p.write_bytes(plistlib.dumps(d,sort_keys=False))
 PY
-xcodebuild -project app/Madeira.xcodeproj -scheme Madeira -sdk iphoneos -configuration Release SWIFT_OPTIMIZATION_LEVEL=-O GCC_OPTIMIZATION_LEVEL=3 CODE_SIGNING_ALLOWED=NO archive -archivePath build-out/QueenRuntime.xcarchive > build-out/archive.log 2>&1 || { tail -160 build-out/archive.log; exit 1; }
+xcodebuild -project app/Madeira.xcodeproj -scheme Madeira -sdk iphoneos -configuration Release SWIFT_OPTIMIZATION_LEVEL=-O GCC_OPTIMIZATION_LEVEL=3 CODE_SIGNING_ALLOWED=NO archive -archivePath build-out/QueenRuntime.xcarchive > build-out/archive.log 2>&1 &
+archive_pid=$!
+# Report bounded compiler activity without changing archive flags or outputs.
+while kill -0 "$archive_pid" 2>/dev/null; do
+  sleep 45
+  if kill -0 "$archive_pid" 2>/dev/null; then
+    echo 'Archive progress (pid, parent, elapsed, CPU percent, resident KB, executable):'
+    ps -axo pid=,ppid=,etime=,pcpu=,rss=,comm= | awk -v pid="$archive_pid" '$1 == pid || $NF ~ /(^|\/)(swift-frontend|clang|clang\+\+|ld|metal|actool|ibtool|XCBBuildService)$/ {print}' | head -20 || true
+    wc -c build-out/archive.log
+    tail -3 build-out/archive.log | cut -c 1-220
+  fi
+done
+wait "$archive_pid" || { tail -160 build-out/archive.log; exit 1; }
 python3 "$ORCH/package-runtime.py" "$PWD"
