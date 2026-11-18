@@ -12,7 +12,7 @@ jobs:
   build:
     if: github.repository == 'arjuk7/bcd-ios-builds' && contains(github.event.head_commit.message, '[queen-runtime-build]')
     runs-on: macos-15-intel
-    timeout-minutes: 40
+    timeout-minutes: 60
     env:
       GH_TOKEN: ${{ github.token }}
       PYTHONUNBUFFERED: '1'
@@ -27,10 +27,29 @@ jobs:
           ref: e5b9da7de835b02c0ecd229ef3b921a061545e51
           path: source
           persist-credentials: false
+      - name: Check copy-only transfer safety
+        run: python3 queen-runtime/test-transfer-queen.py
       - name: Compile and package separate runtime
         run: bash queen-runtime/build-runtime.sh
-      - uses: actions/upload-artifact@v4
+      - name: Upload runtime package
+        id: delivery
+        uses: actions/upload-artifact@v4
         if: always()
+        continue-on-error: true
+        with:
+          name: Queen-Domain-Runtime-1
+          path: |
+            source/build-out/Queen-Domain-Runtime-1.ipa
+            source/build-out/runtime-receipt.json
+            source/build-out/ipa.sha256
+            source/build-out/archive.log
+            source/build-out/native667-reuse.json
+            source/build-out/queen-native/queen-native-receipt.json
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Retry runtime package upload once
+        uses: actions/upload-artifact@v4
+        if: always() && steps.delivery.outcome == 'failure'
         with:
           name: Queen-Domain-Runtime-1
           path: |
