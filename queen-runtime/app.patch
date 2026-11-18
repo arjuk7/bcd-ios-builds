@@ -81,7 +81,7 @@ index bee5eb23..93d48f7e 100644
 +            return
 +        }
 +        if QueenRuntime.enabled { QueenRuntime.started = true }
-         // A game on an external drive (Settings › Storage › External drives): when the drive is not open, its saved folder is
+         // A game on an external drive (Settings > Storage > External drives): when the drive is not open, its saved folder is
          // opened again without the picker; if the program is still out of reach, say so. Nothing here for any other game.
          if let drive = ExternalDrives.driveName(library: entry.relativePath) {
 diff --git a/app/Madeira/Info.plist b/app/Madeira/Info.plist
@@ -100,7 +100,7 @@ index 417fbca2..7d1a19e9 100644
  	<string>en</string>
  	<key>CFBundleDisplayName</key>
 -	<string>BCD Touch Lab</string>
-+	<string>Queen’s Domain</string>
++	<string>Queen's Domain</string>
  	<key>CFBundleExecutable</key>
  	<string>$(EXECUTABLE_NAME)</string>
  	<key>CFBundleIdentifier</key>
@@ -166,22 +166,30 @@ index 417fbca2..7d1a19e9 100644
  </dict>
  </plist>
 diff --git a/app/Madeira/JITNetwork.swift b/app/Madeira/JITNetwork.swift
-index f0bf0b51..5f914f92 100644
 --- a/app/Madeira/JITNetwork.swift
 +++ b/app/Madeira/JITNetwork.swift
-@@ -295,9 +295,9 @@ enum JITShortcutFile {
+@@ -295,9 +295,9 @@
              URLQueryItem(name: "name", value: Self.name),
              URLQueryItem(name: "input", value: "text"),
              URLQueryItem(name: "text", value: input),
 -            URLQueryItem(name: "x-success", value: "bcdtouchlab://jit-network/success"),
--            URLQueryItem(name: "x-error", value: "bcdtouchlab://jit-network/error"),
--            URLQueryItem(name: "x-cancel", value: "bcdtouchlab://jit-network/cancel")
 +            URLQueryItem(name: "x-success", value: "queensdomainruntime://jit-network/success"),
+-            URLQueryItem(name: "x-error", value: "bcdtouchlab://jit-network/error"),
 +            URLQueryItem(name: "x-error", value: "queensdomainruntime://jit-network/error"),
+-            URLQueryItem(name: "x-cancel", value: "bcdtouchlab://jit-network/cancel")
 +            URLQueryItem(name: "x-cancel", value: "queensdomainruntime://jit-network/cancel")
          ]
          guard let url = c.url else { completion(.failed("the Shortcuts link could not be built")); return }
          LogStore.shared.log("[jit-shortcut] run input=\(input)")
+@@ -313,7 +313,7 @@
+     /// madeira://jit-network/{success|error|cancel}, from Shortcuts' x-callback-url.
+     @discardableResult
+     func handle(_ url: URL) -> Bool {
+-        guard url.scheme == "bcd" || url.scheme == "madeira", url.host == "jit-network" else { return false }
++        guard (QueenRuntime.enabled ? ["queensdomainruntime"] : ["bcd", "madeira"]).contains(url.scheme?.lowercased() ?? ""), url.host == "jit-network" else { return false }
+         let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+         let value = { (name: String) in query.first { $0.name == name }?.value ?? "" }
+         switch url.path {
 diff --git a/app/Madeira/JITSetup.swift b/app/Madeira/JITSetup.swift
 index 5627af05..6fc7d140 100644
 --- a/app/Madeira/JITSetup.swift
@@ -272,19 +280,19 @@ index ea4aef64..72fb9f5d 100644
 +    var body: some View {
 +        Form {
 +            Section {
-+                Text("Queen’s Domain").font(.largeTitle.bold())
++                Text("Queen's Domain").font(.largeTitle.bold())
 +                Text("A separate runtime for your own copy of the game.").foregroundStyle(.secondary)
-+                Text("Runtime 1 · \(BuildStamp.text)").font(.caption.monospaced())
++                Text("Runtime 1 � \(BuildStamp.text)").font(.caption.monospaced())
 +            }
 +            Section("Play") {
 +                if let entry {
 +                    Text(entry.title)
 +                    Picker("Resolution", selection: $resolution) {
-+                        Text("1440 × 800").tag("1440x800")
-+                        Text("1168 × 536").tag("1168x536")
-+                        Text("960 × 540").tag("960x540")
++                        Text("1440 x 800").tag("1440x800")
++                        Text("1168 x 536").tag("1168x536")
++                        Text("960 x 540").tag("960x540")
 +                    }
-+                    Button("Play Queen’s Domain", systemImage: "play.fill") {
++                    Button("Play Queen's Domain", systemImage: "play.fill") {
 +                        var launch = entry
 +                        launch.resolution = resolution
 +                        launch.frameGeneration = false
@@ -298,7 +306,7 @@ index ea4aef64..72fb9f5d 100644
 +                    Button("Find copied game", systemImage: "arrow.clockwise") { discover() }.disabled(busy)
 +                }
 +                Button("Setup and controls", systemImage: "gear") { setup = true }
-+                if busy { ProgressView("Copying game…") }
++                if busy { ProgressView("Copying game.") }
 +            }
 +            Section("Runtime") {
 +                Toggle("Native render workload", isOn: $native).disabled(hasLaunched || !QueenRuntime.nativeAvailable)
@@ -318,7 +326,7 @@ index ea4aef64..72fb9f5d 100644
 +            NavigationStack {
 +                BCDLiveFrontEnd(play: { game in
 +                    guard QueenRuntime.accepts(game) else {
-+                        library.error = "This runtime starts Queen’s Domain only."
++                        library.error = "This runtime starts Queen's Domain only."
 +                        return
 +                    }
 +                    setup = false
@@ -327,7 +335,7 @@ index ea4aef64..72fb9f5d 100644
 +                    launch.frameGeneration = false
 +                    play(launch)
 +                }, enableJIT: enableJIT, startDock: { _, _ in
-+                    library.error = "Use the Queen’s Domain Play button in this runtime."
++                    library.error = "Use the Queen's Domain Play button in this runtime."
 +                })
 +                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { setup = false } } }
 +            }
@@ -345,8 +353,8 @@ index ea4aef64..72fb9f5d 100644
 +        guard let found = GameLibrary.scan().first(where: { $0.fileName.lowercased() == QueenRuntime.executable }) else { return }
 +        do {
 +            guard found.url.path.hasPrefix(drive.path + "/") else { return }
-+            var game = try LibraryEntry.inspect(found.url)
-+            game.title = "Queen’s Domain"
++            var game = try LibraryModel.inspect(found.url)
++            game.title = "Queen's Domain"
 +            game.resolution = "1440x800"
 +            game.touchControls = true
 +            game.frameGeneration = false
@@ -518,11 +526,14 @@ index ea4aef64..72fb9f5d 100644
 +    }
 +}
 diff --git a/app/Madeira/SavesAndShortcuts.swift b/app/Madeira/SavesAndShortcuts.swift
-index 844fd5be..dce6372f 100644
 --- a/app/Madeira/SavesAndShortcuts.swift
 +++ b/app/Madeira/SavesAndShortcuts.swift
-@@ -33,7 +33,7 @@ final class ShortcutRouter: ObservableObject {
-         c.scheme = "bcd"
+@@ -30,14 +30,14 @@
+ 
+     static func link(for windowsPath: String) -> String {
+         var c = URLComponents()
+-        c.scheme = "bcd"
++        c.scheme = QueenRuntime.enabled ? "queensdomainruntime" : "bcd"
          c.host = "play"
          c.queryItems = [URLQueryItem(name: "exe", value: windowsPath)]
 -        return c.string ?? "bcdtouchlab://play"
@@ -530,6 +541,11 @@ index 844fd5be..dce6372f 100644
      }
  
      func handle(_ url: URL) {
+-        guard ["bcd", "madeira"].contains(url.scheme?.lowercased() ?? ""), url.host?.lowercased() == "play",
++        guard (QueenRuntime.enabled ? ["queensdomainruntime"] : ["bcd", "madeira"]).contains(url.scheme?.lowercased() ?? ""), url.host?.lowercased() == "play",
+               let exe = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                 .queryItems?.first(where: { $0.name == "exe" })?.value, !exe.isEmpty else { return }
+         LogStore.shared.log("[shortcut] asked to start \(exe)")
 diff --git a/app/Madeira/WineProcessBridge.m b/app/Madeira/WineProcessBridge.m
 index cd22a97b..281f06e3 100644
 --- a/app/Madeira/WineProcessBridge.m
